@@ -1,7 +1,4 @@
 function doGet(e) {
-  // doPost(e)にするとformからのpostデータを書き込むことが出来る
-  // 応用すれば、スプレッドシートをRestAPIもどきにしたり、フォームのDBにしたり、いろいろ出来ると思う
-
   // JSONオブジェクト格納用の入れ物
   let prop = PropertiesService.getScriptProperties().getProperties();
   const Spread_ID = prop.Spread_ID;
