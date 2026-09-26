@@ -1,6 +1,6 @@
-# SensorData2SpreadSheets (Environmental Data Logger)
+# URLクエリデータをスプレッドシートに転送するスクリプト
 
-Google Apps Script (GAS) を利用して、温湿度センサや気圧センサなどの環境測定デバイスから、Web API（GETリクエスト）経由でGoogleスプレッドシートに測定データを自動追記（ロギング）するためのスクリプトです。
+Google Apps Script (GAS) を利用して、Web API（GETリクエスト）経由で受信したURLクエリデータを指定のスプレッドシートに転送するスクリプトです。
 
 Raspberry Pi、ESP32、M5StackなどのIoTデバイスから、各種センサーデータ（温度・湿度・気圧・IAQなど）を収集し、スプレッドシートへリアルタイムに蓄積するための「橋渡し（Bridge）」として機能します。
 
