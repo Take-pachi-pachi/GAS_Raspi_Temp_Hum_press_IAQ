@@ -1,52 +1,71 @@
 function doGet(e) {
-  // JSONオブジェクト格納用の入れ物
-  let prop = PropertiesService.getScriptProperties().getProperties();
+  const prop = PropertiesService.getScriptProperties().getProperties();
   const Spread_ID = prop.Spread_ID;
-  var rowData = {};  
+  let rowData = {};  
 
-  if (e.parameter == undefined) {
+  if (!e || !e.parameter || Object.keys(e.parameter).length === 0) {
+    rowData.value = "undefined";
+    return ContentService.createTextOutput(JSON.stringify(rowData))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
 
-      // パラメータ不良の場合はundefinedで返す
-      var getvalue = "undefined";
+  const sheetName = e.parameter.p1;
+  
+  if (!sheetName) {
+    rowData.value = "missing_sheet_name";
+    return ContentService.createTextOutput(JSON.stringify(rowData))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
 
-      // エラーはJSONで返すつもりなので
-      rowData.value = getvalue;
-      var result = JSON.stringify(rowData);
-      return ContentService.createTextOutput(result);
+  try {
+    const spreadsheet = SpreadsheetApp.openById(Spread_ID);
+    const sheet = spreadsheet.getSheetByName(String(sheetName));
 
-  } else {
+    if (!sheet) {
+      rowData.value = "sheet_not_found";
+      return ContentService.createTextOutput(JSON.stringify(rowData))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
 
-      // 書込先スプレッドシートのIDを入力
-      var id = Spread_ID;
+    // 1. GAS側で現在日時を取得（フォーマット: YYYY-MM-DD HH:mm）
+    const now = Utilities.formatDate(new Date(), "Asia/Tokyo", "yyyy-MM-dd HH:mm");
 
-      // スプレッドシート名指定
-      var sheet = SpreadsheetApp.openById(id).getSheetByName(String(e.parameter.p7));
+    // 2. e.parameter に含まれる p2, p3, p4 ... の最大インデックスを探す
+    let maxIndex = 1;
+    Object.keys(e.parameter).forEach(key => {
+      const match = key.match(/^p(\d+)$/);
+      if (match) {
+        const num = parseInt(match[1], 10);
+        if (num > maxIndex) {
+          maxIndex = num;
+        }
+      }
+    });
 
-      // GAS側で現在日時を取得（フォーマット指定: YYYY-MM-DD HH:mm）
-      // スプレッドシートの日時型オブジェクトとして保持したい場合は var now = new Date(); でも構いません
-      var now = Utilities.formatDate(new Date(), "Asia/Tokyo", "yyyy-MM-dd HH:mm");
+    // 3. p2 から maxIndex まで、空文字も含めて順番に配列化
+    const pValues = [];
+    for (let i = 2; i <= maxIndex; i++) {
+      const val = e.parameter[`p${i}`];
+      // パラメータ自体が存在しない場合は空文字、存在する場合はその値を保持
+      pValues.push(val !== undefined ? val : "");
+    }
 
-      // 日時（now）を先頭にし、p2〜p6の測定データを配列にセット
-      // p1（日時データ）はクライアント側から渡さなくてもGASで自動生成されます
-      var array = [ 
-        now, 
-        e.parameter.p2, 
-        e.parameter.p3, 
-        e.parameter.p4, 
-        e.parameter.p5, 
-        e.parameter.p6 
-      ];
+    // 4. スプレッドシートへの書き込み用配列を作成
+    // 1列目: 日時 (now)
+    // 2列目: シート名 (p1)
+    // 3列目以降: 受信データ (p2, p3, ..., p13, ...)
+    const array = [now, sheetName, ...pValues];
 
-      // シートに配列を書き込み
-      sheet.appendRow(array);
+    // シートの最下行へ追記
+    sheet.appendRow(array);
 
-      // 書き込み終わったらOKを返す
-      var getvalue = "ok";
+    rowData.value = "ok";
+    return ContentService.createTextOutput(JSON.stringify(rowData))
+      .setMimeType(ContentService.MimeType.JSON);
 
-      // エラーはJSONで返すつもりなので
-      rowData.value = getvalue;
-      var result = JSON.stringify(rowData);
-      return ContentService.createTextOutput(result);
-
+  } catch (err) {
+    rowData.value = "error: " + err.message;
+    return ContentService.createTextOutput(JSON.stringify(rowData))
+      .setMimeType(ContentService.MimeType.JSON);
   }
 }
